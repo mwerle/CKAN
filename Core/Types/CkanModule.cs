@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using log4net;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Schema;
 using System.Transactions;
 using Autofac;
 using CKAN.Versioning;
@@ -288,9 +291,11 @@ namespace CKAN
         {
             _comparator = comparator;
 
-            if (!validate_json_against_schema(json))
+            var errors = ValidateAgainstSchema(json);
+            if (errors.Any())
             {
-                throw new BadMetadataKraken(null, "Validation against spec failed");
+                var message = "Validation againt the schema failed.\n" + string.Join("\n  ", errors);
+                throw new BadMetadataKraken(null, message);
             }
 
             try
@@ -378,38 +383,26 @@ namespace CKAN
             }
         }
 
-        private static bool validate_json_against_schema(string json)
+        static CkanModule()
         {
+            var assembly = Assembly.GetExecutingAssembly();
+            using (var stream = assembly.GetManifestResourceStream(SchemaPath))
+            using (var reader = new StreamReader(stream))
+            {
+                var result = reader.ReadToEnd();
+                MetadataSchema = JSchema.Parse(result);
+            }
+        }
 
-            log.Debug("In-client JSON schema validation unimplemented.");
-            return true;
-            // due to Newtonsoft Json not supporting v4 of the standard, we can't actually do this :(
+        private static readonly string SchemaPath = "CKAN.CKAN.schema";
+        private static readonly JSchema MetadataSchema;
 
-            //            if (metadata_schema == null)
-            //            {
-            //                string schema = "";
-            //
-            //                try
-            //                {
-            //                    schema = File.ReadAllText(metadata_schema_path);
-            //                }
-            //                catch (Exception)
-            //                {
-            //                    if (!metadata_schema_missing_warning_fired)
-            //                    {
-            //                        User.Error("Couldn't open metadata schema at \"{0}\", will not validate metadata files",
-            //                            metadata_schema_path);
-            //                        metadata_schema_missing_warning_fired = true;
-            //                    }
-            //
-            //                    return true;
-            //                }
-            //
-            //                metadata_schema = JsonSchema.Parse(schema);
-            //            }
-            //
-            //            JObject obj = JObject.Parse(json);
-            //            return obj.IsValid(metadata_schema);
+        private static IList<string> ValidateAgainstSchema(string json)
+        {
+            JObject obj = JObject.Parse(json);
+            IList<string> errors;
+            obj.IsValid(MetadataSchema, out errors);
+            return errors;
         }
 
         /// <summary>
