@@ -5,13 +5,12 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using log4net;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Schema;
-using System.Transactions;
 using Autofac;
 using CKAN.Versioning;
+using log4net;
+using Newtonsoft.Json;
 
 namespace CKAN
 {
@@ -117,7 +116,7 @@ namespace CKAN
     /// <summary>
     ///     Describes a CKAN module (ie, what's in the CKAN.schema file).
     /// </summary>
-    
+
     // Base class for both modules (installed via the CKAN) and bundled
     // modules (which are more lightweight)
     [JsonObject(MemberSerialization.OptIn)]
@@ -367,20 +366,9 @@ namespace CKAN
                 throw new InvalidModuleAttributesException("ksp_version mixed with ksp_version_(min|max)", this);
             }
 
-            if (license == null)
-            {
-                license = new List<License> { new License("unknown") };
-            }
-
-            if (@abstract == null)
-            {
-                @abstract = "";
-            }
-
-            if (name == null)
-            {
-                name = "";
-            }
+            license = license ?? new List<License> { License.UnknownLicense };
+            @abstract = @abstract ?? string.Empty;
+            name = name ?? string.Empty;
         }
 
         static CkanModule()
@@ -491,7 +479,7 @@ namespace CKAN
                 mod1.conflicts.Any(
                     conflict =>
                         mod2.ProvidesList.Contains(conflict.name) && conflict.version_within_bounds(mod2.version));
-        }       
+        }
 
         /// <summary>
         /// Returns true if our mod is compatible with the KSP version specified.
@@ -506,29 +494,35 @@ namespace CKAN
 
         /// <summary>
         /// Returns a human readable string indicating the highest compatible
-        /// version of KSP this module will run with. (Eg: 1.0.2, 1.0.2+,
-        /// "All version", etc).
-        /// 
+        /// version of KSP this module will run with. (Eg: 1.0.2,
+        /// "All versions", etc).
+        ///
         /// This is for *human consumption only*, as the strings may change in the
         /// future as we support additional locales.
         /// </summary>
         public string HighestCompatibleKSP()
         {
+            KspVersion v = LatestCompatibleKSP();
+            if (v.IsAny)
+                return "All versions";
+            else
+                return v.ToString();
+        }
+
+        /// <summary>
+        /// Returns machine readable object indicating the highest compatible
+        /// version of KSP this module will run with.
+        /// </summary>
+        public KspVersion LatestCompatibleKSP()
+        {
             // Find the highest compatible KSP version
             if (ksp_version_max != null)
-            {
-                return ksp_version_max.ToString();
-            }
+                return ksp_version_max;
             else if (ksp_version != null)
-            {
-                return ksp_version.ToString();
-            }
-            else if (ksp_version_min != null )
-            {
-                return ksp_version_min + "+";
-            }
-
-            return "All versions";
+                return ksp_version;
+            else
+                // No upper limit.
+                return KspVersion.Any;
         }
 
         /// <summary>
@@ -645,4 +639,3 @@ namespace CKAN
         }
     }
 }
-

@@ -27,7 +27,7 @@ namespace Tests.Core
         /// Prep environment by setting up a single mod in
         /// a disposable KSP instance.
         /// </summary>
-        [TestFixtureSetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             _testModule = TestData.DogeCoinFlag_101_module();
@@ -98,6 +98,29 @@ namespace Tests.Core
                 // should only contain one path
                 Assert.AreEqual(1, result.Count);
                 Assert.Contains(normalizedInstallDir, result);
+            });
+        }
+
+        /// <summary>
+        /// Try to add the same path with multiple casings, ensure no PathErrorKraken
+        /// </summary>
+        [Test]
+        public void TestCaseSensitivity()
+        {
+            var paths = new HashSet<string>();
+            // add in all-uppercase and all-lowercase version
+            paths.Add(Path.Combine(_gameDataDir.ToUpper(), _testModule.identifier));
+            paths.Add(Path.Combine(_gameDataDir.ToLower(), _testModule.identifier));
+            // here we are looking for no PathErrorKraken
+            Assert.DoesNotThrow(delegate()
+            {
+                var size = _installer.AddParentDirectories(paths).Count;
+                // each directory adds two directories to the result
+                // two directorie sets { GAMEDATA and gamedata } = 4 objects in result array
+                if (size != 4)
+                {
+                    throw new InvalidOperationException("Directories have case-sensitive differences");
+                }
             });
         }
     }

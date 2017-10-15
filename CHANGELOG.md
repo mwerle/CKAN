@@ -2,15 +2,49 @@
 
 All notable changes to this project will be documented in this file.
 
-## v1.22.2-dev
+## v1.22.5
 
 ### Bugfixes
-- [CLI] Removed non-functioning code on available command (#1966 by: poltas; reviewed: dbent)
+- [GUI] Fix crash on startup (#2138 by HebaruSan; reviewed: Olympic1)
+- [Core] Fix exception installing some mods (#2137 by HebaruSan; reviewed: Olympic1)
+
+## v1.22.4
+
+### Bugfixes
+- [GUI] Update Forum Thread link to new thread (#2079 by: politas; reviewed: linuxgurugamer)
+- [core] Move downloads outside of gui transaction (#2073 by: archer884; reviewed: politas)
+- [CLI] Fix crash in "ckan available" with curly braces in mod name (#2111 by: HebaruSan; reviewed: politas)
+- [core] Check grandparent+ directories for find and find_regexp (#2120 by: HebaruSan; reviewed: politas)
+- [core] Add test to cover missing directory entries (#2125 by: HebaruSan; reviewed: politas)
+- [Build] Fix build.ps1 script failing when spaces exist in source path (#2121 by: ayan4m1; reviewed: dbent)
+- [core] Perform directory root comparison in case-insensitive way (#2122 by ayan4m1; reviewed: politas)
+- [Build] Expand .gitignore to handle packages in subdirectories and build output (#2116 by ayan4m1; reviewed: politas)
+- [GUI] Allow uninstall of incompatible mods in GUI (#1929 by ayan4m1; reviewed: politas)
+- [core] Loop to find max KSP version instead of assuming ordering (#2131 by HebaruSan; reviewed: politas)
+
+### Features
+- [GUI] Quit on ctrl-q and alt-f,x (#2132 by hebaruSan; reviewed: politas)
+
+## v1.22.3
+
+### Bugfixes
+- [core] Fix broken Chicken bits from #2023 (#2058 by: politas)
+
+## v1.22.2
+
+### Bugfixes
+- [CLI] Removed non-functioning code on available command (#1966 by: politas; reviewed: dbent)
 - [core] Switch Linux and MacOS to native C# downloads (#2023 by: politas; reviewed: pjf)
+- [NetKAN] Convert spaces to %20 in Curse URLs (#2041 by: politas)
 
 ### Features
 - [Build] Use Cake for build and overhaul/cleanup build (#1589 by: dbent; reviewed: techman83, politas)
 - [Build] Docker updates to support cake! (#1988 by: mathuin; reviewed; reviewed: dbent)
+- [Build] Update Build packages (#2028 by: dbent; reviewed: Olympic1)
+- [Build] Update Build for Mono 5.0.0 (#2049 by: dbent; reviewed: politas)
+- [Build] Update Update build (#2050 by: dbent; reviewed: politas)
+- [core] Update KSP builds (#2056 by: Olympic1; reviewed: linuxgurugamer)
+- [NetKAN] Canonicalize non-raw GitHub URIs (#2054 by: dbent; reviewed: politas)
 
 ## v1.22.1
 
