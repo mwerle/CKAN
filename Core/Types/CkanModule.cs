@@ -383,7 +383,7 @@ namespace CKAN
             using (var reader = new StreamReader(stream))
             {
                 var result = reader.ReadToEnd();
-                //MetadataSchema = JSchema.Parse(result);
+                MetadataSchema = JsonSchema4.FromSampleJson(result);
             }
         }
 
@@ -395,7 +395,7 @@ namespace CKAN
             JsonSchema4 schema = await JsonSchema4.FromJsonAsync(json);
 
             IList<string> errorList = new List<string>();
-            var errors = schema.Validate(json);
+            var errors = schema.Validate(MetadataSchema.ToJson());
 
             foreach (var error in errors)
                 errorList.Add(error.ToString());
