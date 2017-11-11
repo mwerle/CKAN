@@ -5,8 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Schema;
+using System.Threading.Tasks;
+using NJsonSchema;
 using Autofac;
 using CKAN.Versioning;
 using log4net;
@@ -291,9 +291,9 @@ namespace CKAN
             _comparator = comparator;
 
             var errors = ValidateAgainstSchema(json);
-            if (errors.Any())
+            if (errors.Result.Any())
             {
-                var message = "Validation againt the schema failed.\n" + string.Join("\n  ", errors);
+                var message = "Validation against the schema failed.\n" + string.Join("\n  ", errors);
                 throw new BadMetadataKraken(null, message);
             }
 
@@ -378,19 +378,24 @@ namespace CKAN
             using (var reader = new StreamReader(stream))
             {
                 var result = reader.ReadToEnd();
-                MetadataSchema = JSchema.Parse(result);
+                //MetadataSchema = JSchema.Parse(result);
             }
         }
 
         private static readonly string SchemaPath = "CKAN.CKAN.schema";
-        private static readonly JSchema MetadataSchema;
+        private static readonly JsonSchema4 MetadataSchema;
 
-        private static IList<string> ValidateAgainstSchema(string json)
+        private static async Task<IList<string>> ValidateAgainstSchema(string json)
         {
-            JObject obj = JObject.Parse(json);
-            IList<string> errors;
-            obj.IsValid(MetadataSchema, out errors);
-            return errors;
+            JsonSchema4 schema = await JsonSchema4.FromJsonAsync(json);
+
+            IList<string> errorList = new List<string>();
+            var errors = schema.Validate(json);
+
+            foreach (var error in errors)
+                errorList.Add(error.ToString());
+
+            return errorList;
         }
 
         /// <summary>
