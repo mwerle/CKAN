@@ -66,7 +66,7 @@ namespace CKAN
                 if (version != null)
                     return version.ToString();
                 return string.Format("between {0} and {1} inclusive.",
-                    min_version != null ?min_version.ToString() : "any version",
+                    min_version != null ? min_version.ToString() : "any version",
                     max_version != null ? max_version.ToString() : "any version");
             }
         }
@@ -75,18 +75,23 @@ namespace CKAN
 
     public class ResourcesDescriptor
     {
+        [JsonProperty("repository", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(JsonIgnoreBadUrlConverter))]
         public Uri repository;
 
+        [JsonProperty("homepage", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(JsonIgnoreBadUrlConverter))]
         public Uri homepage;
 
+        [JsonProperty("bugtracker", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(JsonIgnoreBadUrlConverter))]
         public Uri bugtracker;
 
+        [JsonProperty("spacedock", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(JsonOldResourceUrlConverter))]
         public Uri spacedock;
 
+        [JsonProperty("curse", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(JsonOldResourceUrlConverter))]
         public Uri curse;
     }
@@ -144,24 +149,24 @@ namespace CKAN
         [JsonProperty("abstract")]
         public string @abstract;
 
-        [JsonProperty("description")]
+        [JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
         public string description;
 
         // Package type: in spec v1.6 can be either "package" or "metapackage"
-        [JsonProperty("kind")]
+        [JsonProperty("kind", NullValueHandling = NullValueHandling.Ignore)]
         public string kind;
 
-        [JsonProperty("author")]
+        [JsonProperty("author", NullValueHandling = NullValueHandling.Ignore)]
         [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string> author;
 
-        [JsonProperty("comment")]
+        [JsonProperty("comment", NullValueHandling = NullValueHandling.Ignore)]
         public string comment;
 
-        [JsonProperty("conflicts")]
+        [JsonProperty("conflicts", NullValueHandling = NullValueHandling.Ignore)]
         public List<RelationshipDescriptor> conflicts;
 
-        [JsonProperty("depends")]
+        [JsonProperty("depends", NullValueHandling = NullValueHandling.Ignore)]
         public List<RelationshipDescriptor> depends;
 
         [JsonProperty("download")]
@@ -170,19 +175,19 @@ namespace CKAN
         [JsonProperty("download_size")]
         public long download_size;
 
-        [JsonProperty("download_hash")]
+        [JsonProperty("download_hash", NullValueHandling = NullValueHandling.Ignore)]
         public DownloadHashesDescriptor download_hash;
 
         [JsonProperty("identifier", Required = Required.Always)]
         public string identifier;
 
-        [JsonProperty("ksp_version")]
+        [JsonProperty("ksp_version", NullValueHandling = NullValueHandling.Ignore)]
         public KspVersion ksp_version;
 
-        [JsonProperty("ksp_version_max")]
+        [JsonProperty("ksp_version_max", NullValueHandling = NullValueHandling.Ignore)]
         public KspVersion ksp_version_max;
 
-        [JsonProperty("ksp_version_min")]
+        [JsonProperty("ksp_version_min", NullValueHandling = NullValueHandling.Ignore)]
         public KspVersion ksp_version_min;
 
         [JsonProperty("ksp_version_strict")]
@@ -195,28 +200,28 @@ namespace CKAN
         [JsonProperty("name")]
         public string name;
 
-        [JsonProperty("provides")]
+        [JsonProperty("provides", NullValueHandling = NullValueHandling.Ignore)]
         public List<string> provides;
 
-        [JsonProperty("recommends")]
+        [JsonProperty("recommends", NullValueHandling = NullValueHandling.Ignore)]
         public List<RelationshipDescriptor> recommends;
 
-        [JsonProperty("release_status")]
+        [JsonProperty("release_status", NullValueHandling = NullValueHandling.Ignore)]
         public ReleaseStatus release_status;
 
-        [JsonProperty("resources")]
+        [JsonProperty("resources", NullValueHandling = NullValueHandling.Ignore)]
         public ResourcesDescriptor resources;
 
-        [JsonProperty("suggests")]
+        [JsonProperty("suggests", NullValueHandling = NullValueHandling.Ignore)]
         public List<RelationshipDescriptor> suggests;
 
         [JsonProperty("version", Required = Required.Always)]
         public Version version;
 
-        [JsonProperty("supports")]
+        [JsonProperty("supports", NullValueHandling = NullValueHandling.Ignore)]
         public List<RelationshipDescriptor> supports;
 
-        [JsonProperty("install")]
+        [JsonProperty("install", NullValueHandling = NullValueHandling.Ignore)]
         public ModuleInstallDescriptor[] install;
 
         // Used to see if we're compatible with a given game/KSP version or not.
@@ -304,7 +309,7 @@ namespace CKAN
             }
             catch (JsonException ex)
             {
-                throw new BadMetadataKraken(null, "JSON deserialization error", ex);
+                throw new BadMetadataKraken(null, string.Format("JSON deserialization error: {0}", ex.Message), ex);
             }
 
             // NOTE: Many of these tests may be better in our Deserialisation handler.
@@ -617,6 +622,15 @@ namespace CKAN
         public override string ToString()
         {
             return string.Format("{0} {1}", identifier, version);
+        }
+
+        public string DescribeInstallStanzas()
+        {
+            List<string> descriptions = new List<string>();
+            foreach (ModuleInstallDescriptor mid in install) {
+                descriptions.Add(mid.DescribeMatch());
+            }
+            return string.Join(", ", descriptions);
         }
     }
 

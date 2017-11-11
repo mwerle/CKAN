@@ -3,15 +3,19 @@ language: csharp
 sudo: required
 
 env:
-    - BUILD_CONFIGURATION=Debug
-    - BUILD_CONFIGURATION=Release
+    global:
+        - BUILD_RELEASE_MONO_VERSION=5.4.0
+    matrix:
+        - BUILD_CONFIGURATION=Debug
+        - BUILD_CONFIGURATION=Release
 
 mono:
-    - 5.0.0
-    - 4.8.0
+    - 5.4.0
+    - 5.2.0
+    - 5.0.1
+    - 4.8.1
     - 4.6.2
     - 4.4.2
-    - 4.0.5
 
 addons:
     apt:
@@ -33,6 +37,7 @@ script:
 deploy:
     # Releases (which are tagged) go to github
     - provider: releases
+      skip_cleanup: true
       api_key:
         secure: AjwbRLStNJZb9hAOLfRLK85KlFo2q2Dr1NKCoDS4elek1nqSiOjL1hH0kDgUMx/PJqQVnFU8tbJPL30t9Pj7jcJhp0LhbbPipQE3TCSpafTneSEbdz5HT+OdghWCZhUhfs07wGNTFUwcAO4WBZ7wv1AnfdfogHdA5RMdykiIl38=
       file:
@@ -40,24 +45,24 @@ deploy:
       on:
         repo: KSP-CKAN/CKAN
         tags: true
-        condition: $BUILD_CONFIGURATION = Release && $(mono --version | perl -ne'/version (\S+)/ and print $1') = 5.0.0
+        condition: $BUILD_CONFIGURATION = Release && $(mono --version | perl -ne'/version (\S+)/ and print $1') = $BUILD_RELEASE_MONO_VERSION
         # all_branches needed as a workaround for travis-ci#1675
         all_branches: true
 
     # Any merge to master gets sent to
     # http://ckan-travis.s3-website-us-east-1.amazonaws.com/
     - provider: s3
+      skip_cleanup: true
       access_key_id: AKIAI5JWAEFPFK6GH3XA
       secret_access_key:
         secure: b0PPlD7auqysK2LHA8N1US03dE/VKH2rOTwIqpIh50l/gURuXEl7Nd8S7qlf2dpEmz+8D5pIWD+J9scfrdD8Uuakhi3sQbqcV26UiR6+Ye06eGQfmIzqzAECt2naqEy7VJ/xrqq5aaaf8QhcOQMba3qVvwDSzkB2fJeh7+D6EY8=
       bucket: ckan-travis
       acl: public_read
-      skip_cleanup: true
       local_dir: _build/repack/$BUILD_CONFIGURATION
       on:
         repo: KSP-CKAN/CKAN
         branch: master
-        condition: $BUILD_CONFIGURATION = Release && $(mono --version | perl -ne'/version (\S+)/ and print $1') = 5.0.0
+        condition: $BUILD_CONFIGURATION = Release && $(mono --version | perl -ne'/version (\S+)/ and print $1') = $BUILD_RELEASE_MONO_VERSION
 
 notifications:
   irc:

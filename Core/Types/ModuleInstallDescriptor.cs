@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text;
 using System.Text.RegularExpressions;
 using ICSharpCode.SharpZipLib.Zip;
 using Newtonsoft.Json;
@@ -16,13 +17,13 @@ namespace CKAN
         #region Properties
 
         // Either file, find, or find_regexp is required, we check this manually at deserialise.
-        [JsonProperty("file")]
+        [JsonProperty("file", NullValueHandling = NullValueHandling.Ignore)]
         public string file;
 
-        [JsonProperty("find")]
+        [JsonProperty("find", NullValueHandling = NullValueHandling.Ignore)]
         public string find;
 
-        [JsonProperty("find_regexp")]
+        [JsonProperty("find_regexp", NullValueHandling = NullValueHandling.Ignore)]
         public string find_regexp;
 
         [JsonProperty("find_matches_files")]
@@ -31,16 +32,24 @@ namespace CKAN
         [JsonProperty("install_to", Required = Required.Always)]
         public string install_to;
 
-        [JsonProperty("as")]
+        [JsonProperty("as", NullValueHandling = NullValueHandling.Ignore)]
         public string @as;
 
-        [JsonProperty("filter")]
-        [JsonConverter(typeof (JsonSingleOrArrayConverter<string>))]
+        [JsonProperty("filter", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string> filter;
 
-        [JsonProperty("filter_regexp")]
-        [JsonConverter(typeof (JsonSingleOrArrayConverter<string>))]
+        [JsonProperty("filter_regexp", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
         public List<string> filter_regexp;
+
+        [JsonProperty("include_only", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
+        public List<string> include_only;
+
+        [JsonProperty("include_only_regexp", NullValueHandling = NullValueHandling.Ignore)]
+        [JsonConverter(typeof(JsonSingleOrArrayConverter<string>))]
+        public List<string> include_only_regexp;
 
         [OnDeserialized]
         internal void DeSerialisationFixes(StreamingContext like_i_could_care)
@@ -49,7 +58,7 @@ namespace CKAN
             // this check now that we're doing better json-fu above.
             if (install_to == null)
             {
-                throw new BadMetadataKraken(null, "Install stanzas must have a file an install_to");
+                throw new BadMetadataKraken(null, "Install stanzas must have an install_to");
             }
 
             var setCount = new[] { file, find, find_regexp }.Count(i => i != null);
@@ -63,6 +72,15 @@ namespace CKAN
             if (setCount > 1)
             {
                 throw new BadMetadataKraken(null, "Install stanzas must only include one of file, find, or find_regexp directives");
+            }
+
+            // Make sure only filter or include_only fields exist but not both at the same time
+            var filterCount = new[] { filter, filter_regexp }.Count(i => i != null);
+            var includeOnlyCount = new[] { include_only, include_only_regexp }.Count(i => i != null);
+
+            if (filterCount > 0 && includeOnlyCount > 0)
+            {
+                throw new BadMetadataKraken(null, "Install stanzas can only contain filter or include_only directives, not both");
             }
         }
 
@@ -121,7 +139,7 @@ namespace CKAN
             string wanted_filter = "^" + Regex.Escape(file) + "(/|$)";
 
             // If it doesn't match our install path, ignore it.
-            if (! Regex.IsMatch(normalised_path, wanted_filter))
+            if (!Regex.IsMatch(normalised_path, wanted_filter))
             {
                 return false;
             }
@@ -141,13 +159,29 @@ namespace CKAN
                 return false;
             }
 
-            if (filter_regexp == null)
+            if (filter_regexp != null && filter_regexp.Any(regexp => Regex.IsMatch(normalised_path, regexp)))
+            {
+                return false;
+            }
+
+            if (include_only != null && include_only.Any(text => path_segments.Contains(text.ToLower())))
             {
                 return true;
             }
 
-            // Finally, check our filter regexpes.
-            return filter_regexp.All(regexp => !Regex.IsMatch(normalised_path, regexp));
+            if (include_only_regexp != null && include_only_regexp.Any(regexp => Regex.IsMatch(normalised_path, regexp)))
+            {
+                return true;
+            }
+
+            if (include_only != null || include_only_regexp != null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
         }
 
         /// <summary>
@@ -201,11 +235,29 @@ namespace CKAN
             }
 
             // Fill in our stanza, and remove our old `find` and `find_regexp` info.
-            ModuleInstallDescriptor stanza = (ModuleInstallDescriptor) this.Clone();
-            stanza.file        = shortest;
-            stanza.find        = null;
+            ModuleInstallDescriptor stanza = (ModuleInstallDescriptor)this.Clone();
+            stanza.file = shortest;
+            stanza.find = null;
             stanza.find_regexp = null;
             return stanza;
+        }
+
+        public string DescribeMatch()
+        {
+            StringBuilder sb = new StringBuilder();
+            if (!string.IsNullOrEmpty(file))
+            {
+                sb.AppendFormat("file=\"{0}\"", file);
+            }
+            if (!string.IsNullOrEmpty(find))
+            {
+                sb.AppendFormat("find=\"{0}\"", find);
+            }
+            if (!string.IsNullOrEmpty(find_regexp))
+            {
+                sb.AppendFormat("find_regexp=\"{0}\"", find_regexp);
+            }
+            return sb.ToString();
         }
     }
 }
